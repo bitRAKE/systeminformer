@@ -413,7 +413,7 @@
     <ResourceCompile Include="..\kphlib\include\sistatus.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Manifest Include="SystemInformer.manifest" />
+    <Manifest Include="SystemInformer.manifest" Condition="'$(SiLlvmBuild)' != 'true'" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\active_search.bmp" />

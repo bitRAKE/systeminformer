@@ -2360,7 +2360,7 @@ namespace CustomBuildTool
             {
                 if (!string.IsNullOrWhiteSpace(Utils.GetGitFilePath()))
                 {
-                    string output = Utils.ExecuteGitCommand(BuildWorkingFolder, ["clean", "-x", "-d", "-f"]);
+                    string output = Utils.ExecuteGitCommand(BuildWorkingFolder, ["clean", "-x", "-d", "-f", "-e", "build/build_*.cmd", "-e", "build/metrics/"]);
 
                     Program.PrintColorMessage(output, ConsoleColor.DarkGray);
                 }

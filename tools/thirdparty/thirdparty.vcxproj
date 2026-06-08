@@ -493,6 +493,6 @@
     <Import Project="$(VCTargetsPath)\BuildCustomizations\marmasm.targets" />
   </ImportGroup>
   <Target Name="CopyThirdPartyPdb" AfterTargets="Build">
-    <Copy SourceFiles="$(OutDir)thirdparty.pdb" DestinationFolder="$(SystemInformerRoot)bin\$(Configuration)$(PlatformArchitecture)\" />
+    <Copy SourceFiles="$(OutDir)thirdparty.pdb" DestinationFolder="$(SystemInformerRoot)bin\$(Configuration)$(PlatformArchitecture)\" Condition="Exists('$(OutDir)thirdparty.pdb')" />
   </Target>
 </Project>

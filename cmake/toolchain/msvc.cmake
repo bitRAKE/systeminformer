@@ -7,6 +7,8 @@
 set(SI_C_STANDARD_FLAG   /std:clatest)
 set(SI_CXX_STANDARD_FLAG /std:c++latest)
 
+option(SI_UNSAFE_BUILD "Build without Spectre mitigation compiler and library settings." OFF)
+
 #
 # Compiler flags
 #
@@ -44,9 +46,14 @@ set(SI_COMPILE_FLAGS_RELEASE_INIT
     /Z7                                 # Debug information format (full)
     /MT                                 # Static runtime library
     /O2                                 # Optimizations (maximum speed)
-    /Qspectre                           # Enable spectre mitigations
     /guard:cf                           # Control flow guard
 )
+
+if(NOT SI_UNSAFE_BUILD)
+    list(APPEND SI_COMPILE_FLAGS_RELEASE_INIT
+        /Qspectre                       # Enable spectre mitigations
+    )
+endif()
 
 #
 # Linker flags
@@ -112,30 +119,32 @@ else()
     message(FATAL_ERROR "Unknown system processor: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
-#
-# Spectre mitigation libraries
-#
-# Specifying /Qspectre alone is not sufficient to link to the spectre mitigation
-# libraries from the Windows SDK. Locate the libraries here and add them to the
-# link flags for builds that specify /Qspectre. This takes precedence over any
-# other libraries in the linker search order.
-#
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
-    set(_si_spectre_arch "arm64")
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-    set(_si_spectre_arch "x64")
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
-    set(_si_spectre_arch "x86")
-else()
-    message(FATAL_ERROR "Unknown system processor: ${CMAKE_SYSTEM_PROCESSOR}")
+if(NOT SI_UNSAFE_BUILD)
+    #
+    # Spectre mitigation libraries
+    #
+    # Specifying /Qspectre alone is not sufficient to link to the spectre mitigation
+    # libraries from the Windows SDK. Locate the libraries here and add them to the
+    # link flags for builds that specify /Qspectre. This takes precedence over any
+    # other libraries in the linker search order.
+    #
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
+        set(_si_spectre_arch "arm64")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+        set(_si_spectre_arch "x64")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
+        set(_si_spectre_arch "x86")
+    else()
+        message(FATAL_ERROR "Unknown system processor: ${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+    cmake_path(SET _si_vctools_dir NORMALIZE $ENV{VCToolsInstallDir})
+    if(NOT _si_vctools_dir)
+        message(FATAL_ERROR "VCToolsInstallDir environment variable is not set")
+    endif()
+    cmake_path(NATIVE_PATH _si_vctools_dir NORMALIZE _si_vctools_dir)
+    list(APPEND SI_LINK_FLAGS_RELEASE_INIT
+        "/LIBPATH:\"${_si_vctools_dir}lib\\spectre\\${_si_spectre_arch}\""
+    )
+    unset(_si_vctools_dir)
+    unset(_si_spectre_arch)
 endif()
-cmake_path(SET _si_vctools_dir NORMALIZE $ENV{VCToolsInstallDir})
-if(NOT _si_vctools_dir)
-    message(FATAL_ERROR "VCToolsInstallDir environment variable is not set")
-endif()
-cmake_path(NATIVE_PATH _si_vctools_dir NORMALIZE _si_vctools_dir)
-list(APPEND SI_LINK_FLAGS_RELEASE_INIT
-    "/LIBPATH:\"${_si_vctools_dir}lib\\spectre\\${_si_spectre_arch}\""
-)
-unset(_si_vctools_dir)
-unset(_si_spectre_arch)

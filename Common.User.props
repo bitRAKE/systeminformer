@@ -1,16 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <PropertyGroup>
+    <SiLlvmBuild Condition="'$(SI_LLVM_BUILD)' != ''">$(SI_LLVM_BUILD)</SiLlvmBuild>
+    <SiLlvmBuild Condition="'$(SiLlvmBuild)' == '' and '$(DefaultPlatformToolset)' == 'ClangCL'">true</SiLlvmBuild>
+    <SiLlvmBuild Condition="'$(SiLlvmBuild)' == ''">false</SiLlvmBuild>
+    <SiLlvmLto Condition="'$(SI_LLVM_LTO)' != ''">$(SI_LLVM_LTO)</SiLlvmLto>
+    <SiLlvmLto Condition="'$(SiLlvmLto)' == '' and '$(SiLlvmBuild)' == 'true' and '$(SI_UNSAFE_BUILD)' == 'true'">true</SiLlvmLto>
+    <SiLlvmLto Condition="'$(SiLlvmLto)' == ''">false</SiLlvmLto>
+    <SiMsvcNoDateOption Condition="'$(SiLlvmBuild)' != 'true'">/d1nodatetime</SiMsvcNoDateOption>
+    <SiMsvcImportNoRegistryOption Condition="'$(SiLlvmBuild)' != 'true'">/d1import_no_registry</SiMsvcImportNoRegistryOption>
+    <SiMsvcJumpTableOption Condition="'$(SiLlvmBuild)' != 'true'">/jumptablerdata</SiMsvcJumpTableOption>
+    <SiMsvcGuardXfgCompileOption Condition="'$(SiLlvmBuild)' != 'true'">/guard:xfg</SiMsvcGuardXfgCompileOption>
+    <SiMsvcGuardXfgLinkOption Condition="'$(SiLlvmBuild)' != 'true'">/GUARD:XFG</SiMsvcGuardXfgLinkOption>
+    <SiMsvcLtcgLinkOption Condition="'$(SiLlvmBuild)' != 'true'">/LTCG</SiMsvcLtcgLinkOption>
+    <SiMsvcPrivateLinkOptions Condition="'$(SiLlvmBuild)' != 'true'">/NOOPTIDATA /NOVCFEATURE /NOCOFFGRPINFO /BASERELOCCLUSTERING</SiMsvcPrivateLinkOptions>
+    <SiMsvcTrimFileOption Condition="'$(SiLlvmBuild)' != 'true'">/d1trimfile:"$(MSBuildThisFileDirectory)\"</SiMsvcTrimFileOption>
+    <SiLlvmCompileOptions Condition="'$(SiLlvmBuild)' == 'true'">/clang:-Wno-unused-command-line-argument /clang:-Wno-c23-extensions /clang:-Wno-unknown-pragmas /clang:-Wno-pragma-pack /clang:-Wno-pointer-sign /clang:-Wno-incompatible-pointer-types /clang:-Wno-microsoft-enum-forward-reference /clang:-Wno-parentheses /clang:-Wno-unused-variable /clang:-Wno-unused-local-typedef /clang:-Wno-reorder-ctor</SiLlvmCompileOptions>
+    <SiLlvmCompileOptions Condition="'$(SiLlvmBuild)' == 'true' and '$(SiLlvmLto)' == 'true'">$(SiLlvmCompileOptions) /clang:-flto=full /clang:-ffunction-sections /clang:-fdata-sections</SiLlvmCompileOptions>
+    <SiLlvmCompileOptions Condition="'$(SiLlvmBuild)' == 'true' and '$(SI_LLVM_NATIVE)' == 'true'">$(SiLlvmCompileOptions) /clang:-march=native</SiLlvmCompileOptions>
+  </PropertyGroup>
+
   <!-- Global -->
   <ItemDefinitionGroup>
       <ClCompile>
-          <TreatWarningAsError>true</TreatWarningAsError>
+          <TreatWarningAsError Condition="'$(SiLlvmBuild)' == 'true'">false</TreatWarningAsError>
+          <TreatWarningAsError Condition="'$(SiLlvmBuild)' != 'true'">true</TreatWarningAsError>
           <WarningLevel>Level3</WarningLevel>
           <SDLCheck>true</SDLCheck>
           <MinimalRebuild>false</MinimalRebuild>
           <MultiProcessorCompilation>true</MultiProcessorCompilation>
           <LanguageStandard>stdcpplatest</LanguageStandard>
-          <LanguageStandard_C>stdclatest</LanguageStandard_C>
+          <LanguageStandard_C Condition="'$(SiLlvmBuild)' != 'true'">stdclatest</LanguageStandard_C>
           <StringPooling>true</StringPooling>
           <SupportJustMyCode>false</SupportJustMyCode>
           <UseFullPaths>false</UseFullPaths>
@@ -26,9 +47,10 @@
           <LargeAddressAware>true</LargeAddressAware>
       </Link>
       <Lib>
-          <TreatLibWarningAsErrors>true</TreatLibWarningAsErrors>
+          <TreatLibWarningAsErrors Condition="'$(SiLlvmBuild)' == 'true'">false</TreatLibWarningAsErrors>
+          <TreatLibWarningAsErrors Condition="'$(SiLlvmBuild)' != 'true'">true</TreatLibWarningAsErrors>
           <UseUnicodeResponseFiles>true</UseUnicodeResponseFiles>
-          <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
+          <LinkTimeCodeGeneration Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">true</LinkTimeCodeGeneration>
       </Lib>
       <ResourceCompile>
           <Culture>0x0009</Culture>
@@ -103,31 +125,37 @@
     <CharacterSet>Unicode</CharacterSet>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
-    <SpectreMitigation>Spectre</SpectreMitigation>
+    <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'=='true'">false</SpectreMitigation>
+    <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'!='true'">Spectre</SpectreMitigation>
     <LinkIncremental>false</LinkIncremental>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization Condition="'$(SiLlvmBuild)' == 'true' and '$(SiLlvmLto)' != 'true'">false</WholeProgramOptimization>
+    <WholeProgramOptimization Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <CharacterSet>Unicode</CharacterSet>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
-    <SpectreMitigation>Spectre</SpectreMitigation>
+    <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'=='true'">false</SpectreMitigation>
+    <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'!='true'">Spectre</SpectreMitigation>
     <LinkIncremental>false</LinkIncremental>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization Condition="'$(SiLlvmBuild)' == 'true' and '$(SiLlvmLto)' != 'true'">false</WholeProgramOptimization>
+    <WholeProgramOptimization Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
     <CharacterSet>Unicode</CharacterSet>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
-    <SpectreMitigation>Spectre</SpectreMitigation>
+    <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'=='true'">false</SpectreMitigation>
+    <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'!='true'">Spectre</SpectreMitigation>
     <LinkIncremental>false</LinkIncremental>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization Condition="'$(SiLlvmBuild)' == 'true' and '$(SiLlvmLto)' != 'true'">false</WholeProgramOptimization>
+    <WholeProgramOptimization Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">true</WholeProgramOptimization>
   </PropertyGroup>
 
   <!-- Debug|Win32 Builds -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       <ClCompile>
-          <AdditionalOptions>/utf-8 /d1nodatetime %(AdditionalOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
+          <AdditionalOptions>/utf-8 $(SiMsvcNoDateOption) %(AdditionalOptions) $(SiLlvmCompileOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
           <PreprocessorDefinitions>WIN32;DEBUG;_DEBUG;_WINDOWS;_USRDLL;ENABLE_RESTRICTED;_DBG_MEMCPY_INLINE_;CONST_VTABLE;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
           <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
           <EnableEnhancedInstructionSet>$(ExternalSimdOptions)</EnableEnhancedInstructionSet>
@@ -156,7 +184,7 @@
   <!-- Debug|x64 Builds -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       <ClCompile>
-          <AdditionalOptions>/utf-8 /d1nodatetime /d1import_no_registry /jumptablerdata %(AdditionalOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
+          <AdditionalOptions>/utf-8 $(SiMsvcNoDateOption) $(SiMsvcImportNoRegistryOption) $(SiMsvcJumpTableOption) %(AdditionalOptions) $(SiLlvmCompileOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
           <PreprocessorDefinitions>WIN64;DEBUG;_DEBUG;_WINDOWS;_USRDLL;ENABLE_RESTRICTED;_DBG_MEMCPY_INLINE_;CONST_VTABLE;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
           <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
           <EnableEnhancedInstructionSet>$(ExternalSimdOptions)</EnableEnhancedInstructionSet>
@@ -185,7 +213,7 @@
   <!-- Debug|ARM64 Builds -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
       <ClCompile>
-          <AdditionalOptions>/utf-8 /d1nodatetime /d1import_no_registry %(AdditionalOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
+          <AdditionalOptions>/utf-8 $(SiMsvcNoDateOption) $(SiMsvcImportNoRegistryOption) %(AdditionalOptions) $(SiLlvmCompileOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
           <PreprocessorDefinitions>WIN64;DEBUG;_DEBUG;_WINDOWS;_USRDLL;ENABLE_RESTRICTED;_DBG_MEMCPY_INLINE_;CONST_VTABLE;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
           <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
           <EnableEnhancedInstructionSet>$(ExternalSimdOptions)</EnableEnhancedInstructionSet>
@@ -215,7 +243,7 @@
   <!-- Release|Win32 Builds -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       <ClCompile>
-          <AdditionalOptions>/utf-8 /d1nodatetime /d1import_no_registry /d1trimfile:"$(MSBuildThisFileDirectory)\" %(AdditionalOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
+          <AdditionalOptions>/utf-8 $(SiMsvcNoDateOption) $(SiMsvcImportNoRegistryOption) $(SiMsvcTrimFileOption) %(AdditionalOptions) $(SiLlvmCompileOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
           <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENABLE_RESTRICTED;CONST_VTABLE;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
           <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
           <Optimization>MaxSpeed</Optimization>
@@ -224,15 +252,17 @@
           <FloatingPointModel>Precise</FloatingPointModel>
           <FunctionLevelLinking>true</FunctionLevelLinking>
           <IntrinsicFunctions>true</IntrinsicFunctions>
-          <SpectreMitigation>Spectre</SpectreMitigation>
+          <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'=='true'">false</SpectreMitigation>
+          <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'!='true'">Spectre</SpectreMitigation>
           <IntelJCCErratum>true</IntelJCCErratum>
           <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-          <WholeProgramOptimization>true</WholeProgramOptimization>
+          <WholeProgramOptimization Condition="'$(SiLlvmBuild)' == 'true' and '$(SiLlvmLto)' != 'true'">false</WholeProgramOptimization>
+          <WholeProgramOptimization Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">true</WholeProgramOptimization>
           <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
           <ControlFlowGuard>Guard</ControlFlowGuard>
       </ClCompile>
       <Link>
-          <AdditionalOptions>/BREPRO /DEBUGTYPE:CV,PDATA /DEPENDENTLOADFLAG:0x800 /PDBALTPATH:%_PDB% /FILEALIGN:0x1000 /NOOPTIDATA /NOVCFEATURE /NOCOFFGRPINFO /BASERELOCCLUSTERING %(AdditionalOptions) $(ExternalLinkerOptions)</AdditionalOptions>
+          <AdditionalOptions>/BREPRO /DEBUGTYPE:CV,PDATA /DEPENDENTLOADFLAG:0x800 /PDBALTPATH:%_PDB% /FILEALIGN:0x1000 $(SiMsvcPrivateLinkOptions) %(AdditionalOptions) $(ExternalLinkerOptions)</AdditionalOptions>
           <AdditionalDependencies>invalidcontinue.obj;noarg.obj;noenv.obj;nothrownew.obj;%(AdditionalDependencies)</AdditionalDependencies>
           <CETCompat>true</CETCompat>
           <MinimumRequiredVersion>6.01</MinimumRequiredVersion>
@@ -242,14 +272,14 @@
           <OptimizeReferences>true</OptimizeReferences>
           <EnableCOMDATFolding>true</EnableCOMDATFolding>
           <UseUnicodeResponseFiles>true</UseUnicodeResponseFiles>
-          <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+          <LinkTimeCodeGeneration Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       </Link>
   </ItemDefinitionGroup>
 
   <!-- Release|x64 Builds -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       <ClCompile>
-          <AdditionalOptions>/utf-8 /d1nodatetime /d1import_no_registry /guard:xfg /jumptablerdata /d1trimfile:"$(MSBuildThisFileDirectory)\" %(AdditionalOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
+          <AdditionalOptions>/utf-8 $(SiMsvcNoDateOption) $(SiMsvcImportNoRegistryOption) $(SiMsvcGuardXfgCompileOption) $(SiMsvcJumpTableOption) $(SiMsvcTrimFileOption) %(AdditionalOptions) $(SiLlvmCompileOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
           <PreprocessorDefinitions>WIN64;NDEBUG;_WINDOWS;_USRDLL;ENABLE_RESTRICTED;CONST_VTABLE;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
           <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
           <EnableEnhancedInstructionSet>$(ExternalSimdOptions)</EnableEnhancedInstructionSet>
@@ -259,16 +289,18 @@
           <FloatingPointModel>Precise</FloatingPointModel>
           <FunctionLevelLinking>true</FunctionLevelLinking>
           <IntrinsicFunctions>true</IntrinsicFunctions>
-          <SpectreMitigation>Spectre</SpectreMitigation>
+          <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'=='true'">false</SpectreMitigation>
+          <SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'!='true'">Spectre</SpectreMitigation>
           <IntelJCCErratum>true</IntelJCCErratum>
           <GuardEHContMetadata>true</GuardEHContMetadata>
           <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-          <WholeProgramOptimization>true</WholeProgramOptimization>
+          <WholeProgramOptimization Condition="'$(SiLlvmBuild)' == 'true' and '$(SiLlvmLto)' != 'true'">false</WholeProgramOptimization>
+          <WholeProgramOptimization Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">true</WholeProgramOptimization>
           <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
           <ControlFlowGuard>Guard</ControlFlowGuard>
       </ClCompile>
       <Link>
-          <AdditionalOptions>/BREPRO /DEBUGTYPE:CV,PDATA /DEPENDENTLOADFLAG:0x800 /PDBALTPATH:%_PDB% /FILEALIGN:0x1000 /LTCG /GUARD:XFG /NOOPTIDATA /NOVCFEATURE /NOCOFFGRPINFO /BASERELOCCLUSTERING %(AdditionalOptions) $(ExternalLinkerOptions)</AdditionalOptions>
+          <AdditionalOptions>/BREPRO /DEBUGTYPE:CV,PDATA /DEPENDENTLOADFLAG:0x800 /PDBALTPATH:%_PDB% /FILEALIGN:0x1000 $(SiMsvcLtcgLinkOption) $(SiMsvcGuardXfgLinkOption) $(SiMsvcPrivateLinkOptions) %(AdditionalOptions) $(ExternalLinkerOptions)</AdditionalOptions>
           <AdditionalDependencies>invalidcontinue.obj;noarg.obj;noenv.obj;nothrownew.obj;%(AdditionalDependencies)</AdditionalDependencies>
           <CETCompat>true</CETCompat>
           <MinimumRequiredVersion>6.01</MinimumRequiredVersion>
@@ -278,14 +310,14 @@
           <OptimizeReferences>true</OptimizeReferences>
           <EnableCOMDATFolding>true</EnableCOMDATFolding>
           <UseUnicodeResponseFiles>true</UseUnicodeResponseFiles>
-          <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+          <LinkTimeCodeGeneration Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       </Link>
   </ItemDefinitionGroup>
 
   <!-- Release|ARM64 Builds -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
       <ClCompile>
-          <AdditionalOptions>/utf-8 /d1nodatetime /d1import_no_registry /d1trimfile:"$(MSBuildThisFileDirectory)\" %(AdditionalOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
+          <AdditionalOptions>/utf-8 $(SiMsvcNoDateOption) $(SiMsvcImportNoRegistryOption) $(SiMsvcTrimFileOption) %(AdditionalOptions) $(SiLlvmCompileOptions) $(ExternalAdditionalOptions)</AdditionalOptions>
           <PreprocessorDefinitions>WIN64;NDEBUG;_WINDOWS;_USRDLL;ENABLE_RESTRICTED;CONST_VTABLE;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
           <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
           <EnableEnhancedInstructionSet>$(ExternalSimdOptions)</EnableEnhancedInstructionSet>
@@ -298,12 +330,13 @@
           <GuardSignedReturns>true</GuardSignedReturns>
           <GuardEHContMetadata>true</GuardEHContMetadata>
           <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-          <WholeProgramOptimization>true</WholeProgramOptimization>
+          <WholeProgramOptimization Condition="'$(SiLlvmBuild)' == 'true' and '$(SiLlvmLto)' != 'true'">false</WholeProgramOptimization>
+          <WholeProgramOptimization Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">true</WholeProgramOptimization>
           <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
           <ControlFlowGuard>Guard</ControlFlowGuard>
       </ClCompile>
       <Link>
-          <AdditionalOptions>/BREPRO /DEBUGTYPE:CV,PDATA /DEPENDENTLOADFLAG:0x800 /PDBALTPATH:%_PDB% /FILEALIGN:0x1000 /LTCG /NOOPTIDATA /NOVCFEATURE /NOCOFFGRPINFO /BASERELOCCLUSTERING %(AdditionalOptions) $(ExternalLinkerOptions)</AdditionalOptions>
+          <AdditionalOptions>/BREPRO /DEBUGTYPE:CV,PDATA /DEPENDENTLOADFLAG:0x800 /PDBALTPATH:%_PDB% /FILEALIGN:0x1000 $(SiMsvcLtcgLinkOption) $(SiMsvcPrivateLinkOptions) %(AdditionalOptions) $(ExternalLinkerOptions)</AdditionalOptions>
           <AdditionalDependencies>invalidcontinue.obj;noarg.obj;noenv.obj;nothrownew.obj;%(AdditionalDependencies)</AdditionalDependencies>
           <MinimumRequiredVersion>10</MinimumRequiredVersion>
           <TargetMachine>MachineARM64</TargetMachine>
@@ -312,7 +345,7 @@
           <OptimizeReferences>true</OptimizeReferences>
           <EnableCOMDATFolding>true</EnableCOMDATFolding>
           <UseUnicodeResponseFiles>true</UseUnicodeResponseFiles>
-          <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+          <LinkTimeCodeGeneration Condition="'$(SiLlvmBuild)' != 'true' or '$(SiLlvmLto)' == 'true'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       </Link>
   </ItemDefinitionGroup>
 

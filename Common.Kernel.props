@@ -11,7 +11,8 @@
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <CharacterSet>Unicode</CharacterSet>
-    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
+    <Driver_SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'=='true'">false</Driver_SpectreMitigation>
+    <Driver_SpectreMitigation Condition="'$(SI_UNSAFE_BUILD)'!='true'">Spectre</Driver_SpectreMitigation>
     <TargetVersion>Windows10</TargetVersion>
     <_NT_TARGET_VERSION Condition="'$(Platform)'=='x64'">0x0A00</_NT_TARGET_VERSION>
     <_NT_TARGET_VERSION Condition="'$(Platform)'=='ARM64'">0xA000004</_NT_TARGET_VERSION>
